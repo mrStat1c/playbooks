@@ -1,0 +1,88 @@
+---
+- name: Init CATALINA_HOME
+    vars:
+        catalina_home_string: "export CATALINA_HOME=/apps/tomcat"
+        export_path_string:   "export PATH=$CATALINA_HOME:$PATH"
+    replace:
+        path:    /home/mr_static/.bashrc
+        regexp:  ^(fi\n)$
+        replace: \1\n{{ catalina_home_string }}\n{{ export_path_string }}\n
+
+
+- name: Add CATALINA_PID to /etc/environment
+  lineinfile:
+          path:    /etc/environment
+          line:    CATALINA_PID=/apps/tomcat/bin/catalina.pid
+          create:  yes
+          mode:    0666
+
+
+- name: Unarchiving tomcat
+  unarchive:
+           src: "{{ ansible_home }}/files/apache-tomcat-8.5.40.zip"
+           dest: /apps/
+
+
+- name: Create link on tomcat directory
+  file:
+          src:    /apps/apache-tomcat-8.5.40/
+          path:   "{{ tomcat_home }}"
+          state:  link
+
+
+- name: Edit permissions on work directories
+  file:
+      path:   "{{ item }}"
+      mode :  0777
+  with_items:
+         - "/apps"
+         - "{{ tomcat_home }}/bin"
+         - "{{ tomcat_home }}/bin/startup.sh"
+         - "{{ tomcat_home }}/bin/shutdown.sh"
+         - "{{ tomcat_home }}/bin/catalina.sh"
+         - "{{ tomcat_home }}/logs"
+
+
+- name: Edit owner for tomcat
+  file:
+        path:     "{{ tomcat_home }}"
+        owner:    mr_static
+        group:    mr_static
+        recurse:  yes
+
+
+- name: Set properties for access to tomcat-manager
+  vars:
+        text: '\n\t<role rolename="manager-gui"/>\n\t<role rolename="manager-script"/>\n\t<user username="admin" password="12334xX!" roles="manager-script,manager-gui"/>'
+  replace:
+        path:     "{{ tomcat_home }}/conf/tomcat-users.xml"
+        regexp:   '(<tomcat-users[\w\W]+version="1.0">)'
+        replace:  \1\n{{ text }}
+
+
+- name: Remove elements Valve and Manager from tomcat manager context
+  replace:
+        path:     "{{ tomcat_home }}/webapps/manager/META-INF/context.xml"
+        regexp:   (<Valve[\w\W]+<Manager[\w\W]+?/>)
+
+
+- name: Remove needless webapps
+  file:
+        path:     "{{ tomcat_home }}/webapps/{{ item }}"
+        state:    absent
+  with_items:
+         - docs
+         - examples
+
+
+- name: Add MySQL connector
+  copy:
+        src:    "{{ ansible_home }}/files/mysql-connector-java-8.0.15.jar"
+        dest:   "{{ tomcat_home }}/lib"
+
+
+- name: Add property "hibernate.dialect" to catalina.properties
+  lineinfile:
+          path:     "{{ tomcat_home }}/conf/catalina.properties"
+          line:     hibernate.dialect=com.modirum.db.MySQL56SpecialDialectJPA
+          create:   yes

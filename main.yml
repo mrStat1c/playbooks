@@ -1,0 +1,23 @@
+---
+- name: All stands settings
+  hosts: all
+  become: yes
+  roles:
+    - tomcat
+    - web-app
+
+- name: Only Stand-1 settings
+  hosts: stand-1
+  become: yes
+  roles:
+    - db
+    - nginx
+    - daemon
+
+- name: Only Stand-3 settings
+  hosts: stand-3
+  become: yes
+  vars:
+      x: "unuselessVariable"
+  roles:
+    - kafka

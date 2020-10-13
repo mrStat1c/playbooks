@@ -1,0 +1,12 @@
+---
+- name: Create work directories
+  file:
+       path:  "/apps/daemon/{{ item }}"
+       state: directory
+       mode:  0775
+       owner: mr_static
+       group: mr_static
+  with_items:
+          - /service1/out
+          - /service2/in
+          - /service2/out

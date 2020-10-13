@@ -1,0 +1,108 @@
+---
+- name: Install nginx
+  block:
+    - name: Add repository
+      yum:
+          name: epel-release
+          state: present
+    - name: Install Nginx
+      yum:
+          name: nginx
+          state: present
+
+
+- name: Prepare directory with certificates
+  vars:
+      cert_dir: /etc/nginx/cert
+  block:
+     - name: Create directory
+       file:
+            path:  "{{ cert_dir }}"
+            state: directory
+            mode:  0777
+            owner: mr_static
+            group: mr_static
+            recurse: yes
+     - name: Put certificates
+       copy:
+            src:  "{{ ansible_home }}/files/forNginx/certs/"
+            dest: "{{ cert_dir }}"
+            owner: mr_static
+            group: mr_static
+
+
+- name: Prepare directory with configuration files
+  vars:
+      conf_dir: /etc/nginx/conf.d
+  block:
+     - name: Create directory
+       file:
+            path:  "{{ conf_dir }}"
+            state: directory
+            mode:  0777
+            owner: mr_static
+            group: mr_static
+            recurse: yes
+     - name: Create conf files
+       file:
+            path:  "{{ conf_dir }}/{{ item }}"
+            state: touch
+            owner: mr_static
+            group: mr_static
+       with_items:
+            - server443.conf
+            - server444.conf
+            - server7443.conf
+            - server8443.conf
+            - server9443.conf
+
+
+- name: Prepare directory with log files
+  vars:
+      log_dir: /apps/nginx_logs
+  block:
+     - name: Create directory
+       file:
+            path:  "{{ log_dir }}"
+            state: directory
+            mode:  0777
+            owner: mr_static
+            group: mr_static
+            recurse: yes
+     - name: Create log files
+       file:
+            path:  "{{ log_dir }}/{{ item }}"
+            state: touch
+            owner: mr_static
+            group: mr_static
+       with_items:
+            - inc_443_access.log
+            - inc_443_error.log
+            - inc_444_access.log
+            - inc_444_error.log
+            - inc_7443_access.log
+            - inc_7443_error.log
+            - inc_8443_access.log
+            - inc_8443_error.log
+            - inc_9443_access.log
+            - inc_9443_error.log
+
+
+- name: Copy dark souls logo
+  vars:
+       stcontent_dir: /usr/share/nginx/html/stcontent
+  block:
+      - name: Create directory
+        file:
+             path:  "{{ stcontent_dir }}"
+             state: directory
+      - name: Copy file
+        copy:
+             src:  "{{ ansible_home }}/files/forNginx/ds.png"
+             dest: "{{ stcontent_dir }}"
+
+
+- name: Start Nginx
+  systemd:
+          name:  nginx
+          state: started

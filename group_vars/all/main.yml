@@ -1,0 +1,12 @@
+---
+ansible_ssh_user:  mr_Stat1c
+ansible_ssh_pass:  superSeriousPassword
+
+ansible_home:      /etc/ansible
+
+tomcat_home:       /apps/tomcat
+
+hsm_host:          10.10.10.100
+hsm_port:          1500
+
+kafka_home:        /apps/kafka

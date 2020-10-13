@@ -1,0 +1,65 @@
+---
+- name: Prepare file with HSM properties
+  lineinfile:
+          path: "{{ tomcat_home}}/conf/mdjce.properties"
+          line: "{{ item }}"
+          create: yes
+          owner: mr_static
+          group: mr_static
+  with_items:
+          - "host={{ hsm_host }}"
+          - "port={{ hsm_port }}"
+  when: inventory_hostname in groups['stand-1'] or inventory_hostname in groups['stand-3']
+
+
+- name: Enable HTTPS for port 8080 without redirectPort
+  replace:
+        path:    "{{ tomcat_home }}/conf/server.xml"
+        regexp:  '(<Connector port="8080")[\w\W]+?/>'
+        replace: '<Connector port="8080" scheme="https" />'
+  when: inventory_hostname in groups['stand-1']
+
+
+- name: Add Bouncy Castle PKIX lib
+  copy:
+        src:    "{{ ansible_home }}/files/bcpkix-jdk15on-1.60.jar"
+        dest:   "{{ tomcat_home }}/lib"
+  when: inventory_hostname in groups['stand-1'] or inventory_hostname in groups['stand-2'] or inventory_hostname in groups['stand-3']
+
+
+- name: Add Bouncy Castle Provider lib
+  copy:
+        src:    "{{ ansible_home }}/files/bcprov-jdk15on-1.60.jar"
+        dest:   /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.212.b04-0.el7_6.x86_64/jre/lib/ext
+  when: inventory_hostname in groups['stand-1'] or inventory_hostname in groups['stand-3']
+
+
+- name: Add Bouncy Castle Provider to security provider list to java
+  lineinfile:
+              path:         /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.212.b04-0.el7_6.x86_64/jre/lib/security/java.security
+              line:         security.provider.10=org.bouncycastle.jce.provider.BouncyCastleProvider
+              insertafter:  security.provider.9
+              firstmatch:   yes
+              create:       yes
+  when: inventory_hostname in groups['stand-1'] or inventory_hostname in groups['stand-2'] or inventory_hostname in groups['stand-3']
+
+
+- name: Prepare file with CATALINA_OPTS
+  lineinfile:
+            path:    "{{ tomcat_home}}/bin/setenv.sh"
+            line:    export CATALINA_OPTS="$CATALINA_OPTS -Djava.util.concurrent.ForkJoinPool.common.parallelism=13
+            create:  yes
+            owner:   miraccept_at_user
+            group:   miraccept_at_user
+  when: inventory_hostname in groups['stand-1']
+
+
+- name: Add SPRING_CONFIG properties for user "mr_static"
+  lineinfile:
+            path:    /home/mr_static/.bashrc
+            line:    "{{ item }}"
+            create:  yes
+  with_items:
+        - export SPRING_CONFIG_NAME=super-app
+        - export SPRING_CONFIG_LOCATION=/apps/tomcat/conf/Catalina/localhost/
+   when: inventory_hostname in groups['stand-4']
