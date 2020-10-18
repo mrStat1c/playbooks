@@ -1,0 +1,34 @@
+---
+- name: "Check that version variables are defined and not empty if needed"
+  block:
+    - name: "Check that app_version variable is defined and not empty if needed"
+      assert:
+        that:
+          - "app_version is defined and app_version|length > 0"
+      when: "'all' in components_all or item in app_components"
+
+- block:
+    - name: "Check that 'unzip' installed"
+      package:
+        name: unzip
+        state: present
+  rescue:
+    - fail:
+        msg: "Packages 'unzip' is not installed."
+
+- name: "Prepare artifact for deploy components"
+  include_tasks: artifact_downloading.yml
+  vars:
+    repo: "{{ repository }}"
+    group: "{{ item[0]['group'] }}"
+    version: "{{ item[0]['version'] }}"
+    name: "{{ item[0]['name'] }}"
+    classifier: "{{ classifier }}"
+    ext: "{{ item[0]['extension'] }}"
+  when: "'all' in components_all or item[1] in item[0]['including_components']"
+  with_nested:
+    - "{{ artifact_vars }}"
+    - "{{ components_all }}"
+
+- name: "Run tomcat"
+  include_tasks: tomcat_running.yml

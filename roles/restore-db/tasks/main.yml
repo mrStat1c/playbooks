@@ -1,0 +1,14 @@
+- name: 'APP-X LiquiBase unarchiving'
+  unarchive:
+    remote_src: yes
+    src: '{{ directories.temp_dir }}/assembly-{{ assembly_version }}/appx-db-update.zip'
+    dest: '{{ directories.temp_dir }}/assembly-{{ assembly_version }}'
+  when: "'appx' in components_lb"
+
+
+- name: 'APP-X LiquiBase executing'
+  shell: |
+    cd {{ directories.temp_dir }}/assembly-{{ assembly_version }}/appx-db-update-{{ assembly_version }}/src/main/resources/
+    ./manageDb.sh dropAll tmpi
+    ./manageDb.sh update tmpi
+  when: "'appx' in components_lb"

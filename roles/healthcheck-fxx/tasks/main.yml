@@ -1,0 +1,35 @@
+---
+- name: 'Health Check skipping'
+  block:
+    - name: Health Check skipping
+      debug:
+        msg: "fxx healthcheck will be skipped due to database has been cleared"
+    - name: Skip healthcheck
+      meta: end_play
+  when: "'fxx' in components_lb or 'all' in components_lb"
+
+
+- name: 'Show application healthсheck url'
+  debug:
+    msg: "application_healthсheck_url: http://{{ ansible_fqdn }}:8080/fxxservice/"
+  ignore_errors: yes
+  when: "'fxx' in components_all or 'all' in components_all"
+
+
+- name: 'Health Checking'
+  become: yes
+  uri:
+    url: "http://{{ ansible_fqdn }}:8080/fxxservice/"
+    method: POST
+    headers:
+      Content-Type: "text/xml"
+    body_format: raw
+    body: "{{ lookup('file','fxxServiceStatusRequest.xml') }}"
+    status_code: 200
+    return_content: yes
+  ignore_errors: yes
+  register: response
+  until: "'serviceStatus=\"RUNNING\" status=\"OK\"' in response.content"
+  retries: 5
+  delay: 4
+  when: "'fxx' in components_all or 'all' in components_all"

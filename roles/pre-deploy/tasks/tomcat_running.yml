@@ -1,0 +1,33 @@
+- name: "Check that tomcat is alive"
+  become: yes
+  uri:
+      url: "http://{{ ansible_fqdn }}:8080/manager/text/"
+      user: "{{ tomcatuser_survey }}"
+      password: "{{ tomcatpassword_survey }}"
+      method: GET
+  register: manager
+  ignore_errors: yes
+
+
+- name: "Run tomcat if it is not alive"
+  become: yes
+  async: 1
+  shell: |
+    sudo -u mr_static {{ directories_tomcat_home }}/bin/shutdown.sh
+    sudo -u mr_static {{ directories_tomcat_home }}/bin/startup.sh
+  when: manager.status != 200
+
+
+- name: "Check that tomuri:cat is alive after starting"
+  become: yes
+  uri:
+    url: "http://{{ ansible_fqdn }}:8080/manager/text/"
+    user: "{{ tomcatuser_survey }}"
+    password: "{{ tomcatpassword_survey }}"
+    method: GET
+    status_code: 200
+  register: result
+  until: result is not failed
+  when: manager.status != 200
+  retries: 5
+  delay: 10

@@ -1,4 +1,12 @@
 ---
+- name: Pre-deploy
+  hosts: all
+  become: yes
+  gather_facts: yes
+  gather_timeout: 20
+  roles:
+    - {role: pre-deploy, when: predeploy == 'true'}
+
 - name: All stands settings
   hosts: all
   become: yes
@@ -21,3 +29,15 @@
       x: "unuselessVariable"
   roles:
     - kafka
+
+- name: "Check fxx"
+  become: yes
+  hosts: stand-4
+  roles:
+    -  healthcheck-fxx
+
+- name: "Restore db"
+  become: yes
+  hosts: stand-4
+  roles:
+    -  restore-db

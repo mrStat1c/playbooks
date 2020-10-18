@@ -10,3 +10,29 @@ hsm_host:          10.10.10.100
 hsm_port:          1500
 
 kafka_home:        /apps/kafka
+
+directories:
+    temp_dir: "/tmp/mr-static-tmp-{{ timestamp }}"
+    backup_dir: "/tmp/mr-static-backup-{{ timestamp }}"
+
+timestamp: '{{ ansible_date_time.date }}'
+predeploy: '{{ predeploy }}'
+
+#Artifacts
+artifact_vars:
+  - superapp:
+    group: 'ru.msstatic'
+    name: 'superapp'
+    version: "{{ superapp_version }}"
+    extension: 'zip'
+    including_components:
+      - 'component_1'
+      - 'component_2'
+  - new_superapp:
+    group: 'ru.msstatic'
+    name: 'new_superapp'
+    version: "{{ new_superapp_version }}"
+    extension: 'zip'
+    including_components:
+      - 'component_1'
+      - 'component_2'

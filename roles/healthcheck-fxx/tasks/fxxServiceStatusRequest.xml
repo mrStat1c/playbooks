@@ -1,0 +1,8 @@
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Header />
+    <SOAP-ENV:Body>
+        <ns2:MD-FXX xmlns:ns2="ru/static/fxx/definitions">
+            <ns2:serviceStatusRequest id="ID1" timestamp="2019-01-01T00:00:00+03:00"/>
+        </ns2:MD-FXX>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>

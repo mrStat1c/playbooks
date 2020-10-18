@@ -1,0 +1,33 @@
+---
+- block:
+    - name: "Download artifact '{{ artifact_name }}' from {{ nx_server }}:{{ nx_port }}"
+      maven_artifact :
+        group_id: "{{ group }}"
+        artifact_id: "{{ name }}"
+        version: "{{ version }}"
+        extension: "{{ ext }}"
+        repository_url: "https://{{ nx_server }}:{{ nx_port }}/repository/{{ repo }}"
+        dest: "{{ directories.temp_dir }}/{{ name }}-{{ version }}.{{ ext }}"
+        mode: 0755
+        validate_certs: no
+        timeout: 60
+  rescue:
+    - fail:
+        msg: "Download artifact {{ artifact_name }} failed."
+
+
+- block:
+    - name: "Create unarchiving directory for '{{ artifact_name }}' artifact"
+      file:
+        path: '{{ directories.temp_dir }}/{{ name }}-{{ version }}'
+        state: directory
+        directory_mode: 0755
+        recurse: yes
+    - name: "Unarchive downloaded artifact '{{ artifact_name }}' on server"
+      unarchive:
+        remote_src: yes
+        src: '{{ directories.temp_dir }}/{{ name }}-{{ version }}.{{ ext }}'
+        dest: '{{ directories.temp_dir }}/{{ name }}-{{ version }}'
+  rescue:
+    - fail:
+        msg: 'Unarchive artifact {{ artifact_name }} failed.'
