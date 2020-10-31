@@ -49,8 +49,8 @@
             path:    "{{ tomcat_home}}/bin/setenv.sh"
             line:    export CATALINA_OPTS="$CATALINA_OPTS -Djava.util.concurrent.ForkJoinPool.common.parallelism=13
             create:  yes
-            owner:   miraccept_at_user
-            group:   miraccept_at_user
+            owner:   mr_static
+            group:   mr_static
   when: inventory_hostname in groups['stand-1']
 
 
