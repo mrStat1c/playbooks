@@ -1,0 +1,99 @@
+- block:
+
+    - name: 'Check playbookId'
+      shell:     cat "{{ playbookIdFilePath }}"
+      register:  result
+
+
+    - name: 'DEBUG DEBUG DEBUG DEBUG DEBUG'
+      debug:
+        msg: "{{ result.stdout }}"
+
+
+    - name: 'Write playbookId'
+      replace:
+        path: "{{ playbookIdFilePath }}"
+        regexp: '.*'
+        replace: '{{ playbookId }}'
+      when: "result.stdout != playbookId"
+
+
+    - name: 'Deploy SDK Test App'
+      include_tasks: deploy.yml
+      vars:
+        serial_number: "{{ item }}"
+      when: "result.stdout != playbookId"
+      loop: "{{ phone_serial_numbers }}"
+
+  when: "'sdk-test-app' in components_all or 'all' in components_all"
+
+
+- block:
+    - name:
+      debug:
+        msg: "Deploy to mobile phone {{ serial_number }}"
+
+    - name: "Take control of the phone"
+      uri:
+        url: "{{ mobile_farm_url }}"
+        method: POST
+        headers:
+          Content-Type: "application/json"
+          Authorization: "Bearer {{ access_token }}"
+        body_format: json
+        body: "{\"serial\":\"{{ serial_number }}\"}"
+        status_code: 200
+        return_content: yes
+      register: response_1
+      failed_when: response_1.json.success != true
+
+    - name: "Get phone URL for remote connect"
+      uri:
+        url: "{{ mobile_farm_url }}/{{ serial_number }}/remoteConnect"
+        method: POST
+        headers:
+          Authorization: "Bearer {{ access_token }}"
+        status_code: 200
+        return_content: yes
+      register: response_2
+      failed_when: response_2.json.success != true
+
+    - block:
+        - name: "ADB. Connect to phone"
+          vars:
+            remoteConnectUrl: "{{ response_2.json.remoteConnectUrl }}"
+          command: sudo -u miraccept_at_user /apps/platform-tools/adb connect {{ remoteConnectUrl }}
+        - name: "ADB. Uninstall old apk from phone"
+          command: sudo -u miraccept_at_user /apps/platform-tools/adb uninstall ru.nspk.miraccept.cmpi.app
+        - name: "ADB. Install new apk to phone"
+          command: sudo -u miraccept_at_user /apps/platform-tools/adb install -r {{ directories.temp_dir }}/sdk-demo-{{ sdk_test_app_version }}.apk
+          register: result
+          failed_when: "'Success' not in result.stdout"
+      always:
+        - name: "ADB. Disconnect from phone"
+          command: sudo -u miraccept_at_user /apps/platform-tools/adb disconnect
+
+  always:
+    - name: "Disconnect phone remote"
+      uri:
+        url: "{{ mobile_farm_url }}/{{ serial_number }}/remoteConnect"
+        method: DELETE
+        headers:
+          Authorization: "Bearer {{ access_token }}"
+        status_code: 200
+        return_content: yes
+      ignore_errors: yes
+
+    - name: "Free phone"
+      uri:
+        url: "{{ mobile_farm_url }}/{{ serial_number }}"
+        method: DELETE
+        headers:
+          Authorization: "Bearer {{ access_token }}"
+        status_code: 200
+        return_content: yes
+      ignore_errors: yes
+
+  rescue:
+    - fail:
+        msg: 'Deploy of SDK Test App to mobile phone {{ serial_number }} is failed.'

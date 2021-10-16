@@ -86,3 +86,38 @@
           path:     "{{ tomcat_home }}/conf/catalina.properties"
           line:     hibernate.dialect=com.modirum.db.MySQL56SpecialDialectJPA
           create:   yes
+
+
+- name: Add rewrite to server.xml
+  lineinfile:
+    path: "{{ tomcat_home }}/conf/server.xml"
+    line: '		<Valve className="org.apache.catalina.valves.rewrite.RewriteValve" />'
+    insertbefore: </Host>
+    firstmatch: yes
+    create: yes
+  when: inventory_hostname in groups['stand-1']
+
+
+- name: Create rewrite.config
+  block:
+    - name: Create directories
+      file:
+        path: "{{ tomcat_home }}/conf/Catalina/localhost"
+        state: directory
+        owner: miraccept_at_user
+        group: miraccept_at_user
+    - name: Create file
+      file:
+        path: "{{ tomcat_home }}/conf/Catalina/localhost/rewrite.config"
+        state: touch
+        owner: miraccept_at_user
+        group: miraccept_at_user
+    - name: Fill file
+      lineinfile:
+        path: "{{ tomcat_home }}/conf/Catalina/localhost/rewrite.config"
+        line: "{{ item }}"
+        create: yes
+      loop:
+        - "RewriteRule ^/myapp/server/app21 /myapp/server"
+        - "RewriteRule ^/myapp/server/app22 /myapp/server"
+  when: inventory_hostname in groups['stand-1']
